@@ -1,55 +1,51 @@
+---
+title: "Raster teaching demo"
+author: "Casey O'Hara"
+date: "8/18/2021"
+output: html_document
+---
+  
+``` {r setup, include=FALSE}
 ### Set up packages and data from earlier episodes:
 library(raster)
-library(rgdal)
 library(ggplot2)
 library(dplyr)
+```
 
-DSM_HARV <- raster("neon_data/NEON-DS-Airborne-Remote-Sensing/HARV/DSM/HARV_dsmCrop.tif")
-DSM_HARV_df <- as.data.frame(DSM_HARV, xy = TRUE)
+```{r}
+knitr::include_graphics('lidarTree-height.png')
+```
 
+Load in the rasters from Github repo
+``` {r}
+# DSM data for Harvard Forest
+dsm_harv <- raster('https://github.com/oharac/geospatial/raw/main/data/dsm_harv_crop.tif')
 # DTM data for Harvard Forest
-DTM_HARV <- raster("neon_data/NEON-DS-Airborne-Remote-Sensing/HARV/DTM/HARV_dtmCrop.tif")
-DTM_HARV_df <- as.data.frame(DTM_HARV, xy = TRUE)
+dtm_harv <- raster('https://github.com/oharac/geospatial/raw/main/data/dtm_harv_crop.tif')
+```
 
-# DSM data for SJER
-DSM_SJER <- raster("neon_data/NEON-DS-Airborne-Remote-Sensing/SJER/DSM/SJER_dsmCrop.tif")
-DSM_SJER_df <- as.data.frame(DSM_SJER, xy = TRUE)
+Examine the attributes of the two rasters
+```{r}
+dsm_harv; dtm_harv
+```
 
-# DTM data for SJER
-DTM_SJER <- raster("neon_data/NEON-DS-Airborne-Remote-Sensing/SJER/DTM/SJER_dtmCrop.tif")
-DTM_SJER_df <- as.data.frame(DTM_SJER, xy = TRUE)
+```{r}
+plot(dsm_harv, main = 'dsm'); plot(dtm_harv, main = 'dtm')
+```
 
-### Check the spatial attributes:
-GDALinfo("neon_data/NEON-DS-Airborne-Remote-Sensing/HARV/DSM/HARV_dsmCrop.tif")
-GDALinfo("neon_data/NEON-DS-Airborne-Remote-Sensing/HARV/DTM/HARV_dtmCrop.tif")
 
-DSM_HARV
-DTM_HARV
-
+We can also compare the rasters using `raster::compareRaster()`
+```{r}
 ?compareRaster
-compareRaster(DSM_HARV, DTM_HARV)
-compareRaster(DSM_HARV, DTM_HARV, values = TRUE)
+compareRaster(dsm_harv, dtm_harv)
+compareRaster(dsm_harv, dtm_harv, values = TRUE)
+```
 
-### plot the rasters
-ggplot() +
-  geom_raster(data = DTM_HARV_df, aes(x = x, y = y, fill = HARV_dtmCrop)) +
-  scale_fill_gradientn(name = 'Elevation', colors = terrain.colors(10)) +
-  coord_quickmap() +
-  theme(axis.title = element_blank(),
-        axis.text  = element_blank(),
-        axis.ticks = element_blank())
+We will use two ways to calculate the CHM model: "raster math" and the `overlay()` function.
 
-ggplot() +
-  geom_raster(data = DSM_HARV_df, aes(x = x, y = y, fill = HARV_dsmCrop)) +
-  scale_fill_gradientn(name = 'Elevation', colors = terrain.colors(10)) +
-  coord_quickmap() +
-  theme_void()
-
-### We will use two ways to calculate the CHM model: "raster math" and 
-### the overlay() function.
-
-### Raster math is like vector math:
-x <- values(DSM_HARV)
+Raster math is like vector math:
+``` {r}
+x <- values(dsm_harv)
 head(x)
 
 y <- x[1:20]
@@ -57,28 +53,36 @@ y
 y * 2
 y^2
 log(y)
+```
 
-DSM_HARV
-DSM_HARV * 2
+Just as you can do math on a vector, you can do math on rasters:
+``` {r}
+dsm_harv
+dsm_harv * 2
+```
 
-z <- rnorm(n = 20)
-z
-y * z
+Let's calculate a canopy height model using raster math, by subtracting the terrain model from the surface model:
+``` {r}
+chm_harv <- dsm_harv - dtm_harv
+chm_harv
 
-### let's calculate CHM using raster math:
-CHM_HARV1 <- DSM_HARV - DTM_HARV
-CHM_HARV1_df <- as.data.frame(CHM_HARV1, xy = TRUE)
+plot(chm_harv)
+```
 
-plot(CHM_HARV1)
+To plot, convert the raster to a data frame:
+``` {r}
+chm_harv_df <- as.data.frame(chm_harv, xy = TRUE)
+
 ggplot() +
-  geom_raster(data = CHM_HARV1_df, aes(x = x, y = y, fill = layer)) +
+  geom_raster(data = chm_harv_df, aes(x = x, y = y, fill = layer)) +
   scale_fill_gradientn(name = 'Canopy height, m', 
                        colors = c('grey60', 'lightgreen', 'darkgreen')) +
   coord_quickmap() +
   theme_void()
 
 ggplot() +
-  geom_histogram(data = CHM_HARV1_df, aes(layer))
+  geom_histogram(data = chm_harv_df, aes(layer))
+```
 
 ### Challenge: 
 ### It’s often a good idea to explore the range of values in a raster dataset 
