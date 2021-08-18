@@ -69,7 +69,16 @@ chm_harv
 plot(chm_harv)
 ```
 
-To plot, convert the raster to a data frame:
+Let's use `writeRaster` to write our results to a file
+```{r}
+?writeRaster
+writeRaster(CHM_HARV1, filename = 'chm_harv.tif',
+            format = 'GTiff',
+            overwrite = TRUE,
+            NAflag = -9999)
+```
+
+To plot using `ggplot()`, need to convert the raster to a data frame:
 ``` {r}
 chm_harv_df <- as.data.frame(chm_harv, xy = TRUE)
 
@@ -99,35 +108,7 @@ ggplot() +
 ###   ticks / labels.
 
 
-### Now let's perform the same calculation using the overlay() function.
-?overlay
-CHM_HARV2 <- overlay(DSM_HARV,
-                     DTM_HARV,
-                     fun = function(r1, r2) {
-                       diff <- r1 - r2
-                       return(diff)
-                     })
 
-CHM_HARV2
-CHM_HARV2_df <- as.data.frame(CHM_HARV2, xy = TRUE)
-
-ggplot() +
-  geom_raster(data = CHM_HARV2_df, aes(x = x, y = y, fill = layer)) +
-  scale_fill_gradientn(name = 'Canopy height, m', 
-                       colors = c('grey60', 'lightgreen', 'darkgreen')) +
-  coord_quickmap() +
-  theme_void()
-
-### use compareRaster with values = TRUE to check that the spatial 
-### attributes AND the raster values all match up
-compareRaster(CHM_HARV1, CHM_HARV2, values = TRUE)
-
-### Let's use writeRaster to write our results to a file
-?writeRaster
-writeRaster(CHM_HARV1, filename = 'CHM_HARV.tif',
-            format = 'GTiff',
-            overwrite = TRUE,
-            NAflag = -9999)
 
 ### Challenge:
 ### Data are often more interesting and powerful when we compare them across 
