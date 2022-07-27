@@ -5,12 +5,23 @@ date: "8/18/2021"
 output: html_document
 ---
   
-``` {r setup, include=FALSE}
+``` {r setup, message = FALSE, warning = FALSE}
 ### Set up packages and data from earlier episodes:
 library(raster)
-library(ggplot2)
-library(dplyr)
+library(tidyverse)
+library(here)
 ```
+
+Context:
+
+* Find the height of trees in a portion of the Harvard Forest LTER site from lidar digital surface and digital terrain models.
+
+Objectives:
+
+* Familiarity with raster spatial data format including CRS
+* simple spatial analysis using raster math
+* more efficient spatial analysis using raster::overlay()
+* writing results to GeoTIFF
 
 ```{r}
 knitr::include_graphics('lidarTree-height.png')
@@ -19,23 +30,28 @@ knitr::include_graphics('lidarTree-height.png')
 Load in the rasters from Github repo
 ``` {r}
 # DSM data for Harvard Forest
-dsm_harv <- raster('https://github.com/oharac/geospatial/raw/main/data/dsm_harv_crop.tif')
+dsm_harv <- raster(here('data/dsm_harv_crop.tif'))
 # DTM data for Harvard Forest
-dtm_harv <- raster('https://github.com/oharac/geospatial/raw/main/data/dtm_harv_crop.tif')
+dtm_harv <- raster(here('data/dtm_harv_crop.tif'))
 ```
 
-Examine the attributes of the two rasters
+```{r}
+plot(dsm_harv, main = 'dsm')
+plot(dtm_harv, main = 'dtm')
+```
+
+A raster is a list (vector) of values, arranged into a grid, with some geospatial information attached to that grid to locate it in space.
+
+Examine the attributes of the two data rasters
 ```{r}
 dsm_harv; dtm_harv
 ```
 
-```{r}
-plot(dsm_harv, main = 'dsm'); plot(dtm_harv, main = 'dtm')
-```
+
 
 
 We can also compare the rasters using `raster::compareRaster()`
-```{r}
+```{r, eval = FALSE}
 ?compareRaster
 compareRaster(dsm_harv, dtm_harv)
 compareRaster(dsm_harv, dtm_harv, values = TRUE)
@@ -72,7 +88,7 @@ plot(chm_harv)
 Let's use `writeRaster` to write our results to a file
 ```{r}
 ?writeRaster
-writeRaster(CHM_HARV1, filename = 'chm_harv.tif',
+writeRaster(chm_harv, filename = 'chm_harv.tif',
             format = 'GTiff',
             overwrite = TRUE,
             NAflag = -9999)
@@ -85,7 +101,7 @@ chm_harv_df <- as.data.frame(chm_harv, xy = TRUE)
 ggplot() +
   geom_raster(data = chm_harv_df, aes(x = x, y = y, fill = layer)) +
   scale_fill_gradientn(name = 'Canopy height, m', 
-                       colors = c('grey60', 'lightgreen', 'darkgreen')) +
+                       colors = c('brown', 'lightgreen', 'darkgreen')) +
   coord_quickmap() +
   theme_void()
 

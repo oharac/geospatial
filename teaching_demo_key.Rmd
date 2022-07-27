@@ -1,0 +1,112 @@
+---
+title: "Raster teaching demo"
+author: "Casey O'Hara"
+date: "8/18/2021"
+output: html_document
+---
+  
+``` {r setup, message = FALSE, warning = FALSE}
+### Set up packages and data from earlier episodes:
+library(raster)
+library(tidyverse)
+```
+
+### Context:
+
+* Find the height of trees in a portion of the Harvard Forest LTER site using lidar digital surface and digital terrain models.
+
+### Objectives:
+
+* Gain familiarity with raster spatial data format
+* Perform simple spatial analysis using raster math
+* Write results to GeoTIFF
+* Plot results using base plot and ggplot
+
+```{r}
+knitr::include_graphics('lidar_pic.png')
+```
+
+Load in the rasters from Github repo
+``` {r}
+# DSM data for Harvard Forest
+dsm <- raster('data/dsm_harv_crop.tif')
+# DTM data for Harvard Forest
+dtm <- raster('data/dtm_harv_crop.tif')
+```
+
+```{r}
+plot(dsm, main = 'dsm')
+plot(dtm, main = 'dtm')
+hist(dsm); hist(dtm)
+```
+
+A raster is a set of values, arranged into a grid, with some geospatial information attached to that grid to locate it in space.
+
+Examine the attributes of the two data rasters:
+```{r}
+dsm; dtm
+```
+
+We will use "raster math" to calculate the CHM model.  Raster math is like vector math, because raster values are basically vectors in disguise:
+``` {r}
+x <- 1:10
+x^2 + 5
+log(x)
+
+x <- values(dsm)
+y <- values(dtm)
+head(x); head(y)
+
+head(x - y)
+```
+
+Just as you can do math on a vector, you can do math on rasters:
+``` {r}
+dsm
+dsm * 3.281 ### convert elevation in meters to feet
+log(dsm)
+```
+
+Let's calculate a canopy height model using raster math, by subtracting the terrain model from the surface model:
+``` {r}
+chm <- dsm - dtm
+chm
+
+plot(chm)
+hist(chm)
+```
+
+Let's use `writeRaster` to write our results to a file
+```{r}
+# ?writeRaster
+writeRaster(chm, filename = 'chm_harv.tif',
+            format = 'GTiff',
+            overwrite = TRUE)
+```
+
+To plot using `ggplot()`, need to convert the raster to a data frame:
+``` {r}
+chm_df <- as.data.frame(chm, xy = TRUE)
+
+ggplot() +
+  geom_raster(data = chm_df, aes(x = x, y = y, fill = layer)) +
+  scale_fill_gradientn(name = 'Canopy height, m', 
+                       colors = c('brown', 'lightgreen', 'darkgreen')) +
+  coord_quickmap() +
+  theme_void()
+
+ggplot() +
+  geom_histogram(data = chm_df, aes(layer))
+```
+
+### Review
+
+* Basic familiarity with raster format
+* Introduction to raster math
+* Reading, writing, plotting rasters
+
+
+
+
+
+
